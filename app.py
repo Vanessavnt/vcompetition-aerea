@@ -6,6 +6,7 @@ from fastapi import FastAPI, Request, Form, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from mutagen.mp3 import MP3
 
 BASE=Path(__file__).parent
 DB=os.getenv('DATABASE_PATH',str(BASE/'vcompetition.db'))
@@ -13,6 +14,10 @@ UPLOADS=Path(os.getenv('UPLOAD_DIR',str(BASE/'uploads')))
 UPLOADS.mkdir(parents=True,exist_ok=True)
 ALLOWED={'.pdf','.jpg','.jpeg','.png'}
 MAX_UPLOAD=8*1024*1024
+MUSIC_DIR=UPLOADS/'music'
+MUSIC_DIR.mkdir(parents=True,exist_ok=True)
+MAX_MUSIC=20*1024*1024
+MAX_MUSIC_SECONDS=150
 app=FastAPI(title='VCOMPETITION AEREA 2027')
 templates=Jinja2Templates(directory=str(BASE/'templates'))
 app.mount('/static',StaticFiles(directory=str(BASE/'static')),name='static')
@@ -45,13 +50,14 @@ def home(request:Request):
  return templates.TemplateResponse('index.html',{'request':request,'specialties':SPECIALTIES,'ages':AGES,'levels':LEVELS})
 
 @app.post('/iscrizione')
-async def register(request:Request,kind:str=Form(...),school:str=Form(''),contact:str=Form(...),email:str=Form(...),phone:str=Form(...),athlete_names:str=Form(''),performance_data:str=Form(...),payment_method:str=Form(...),notes:str=Form(''),receipt:UploadFile|None=File(None),privacy:str=Form(...),rules:str=Form(...)):
+async def register(request:Request,kind:str=Form(...),school:str=Form(''),contact:str=Form(...),email:str=Form(...),phone:str=Form(...),athlete_names:str=Form(''),performance_data:str=Form(...),payment_method:str=Form(...),notes:str=Form(''),receipt:UploadFile|None=File(None),music_files:list[UploadFile]=File(...),privacy:str=Form(...),rules:str=Form(...)):
  if privacy!='yes' or rules!='yes':raise HTTPException(400,'Consensi obbligatori mancanti')
  if kind not in ('Scuola','Singolo atleta'):raise HTTPException(400,'Tipologia non valida')
  if payment_method not in ('successivo','bonifico'):raise HTTPException(400,'Metodo di pagamento non valido')
  try:performances=json.loads(performance_data)
  except Exception:raise HTTPException(400,'Dati esibizioni non validi')
  if not isinstance(performances,list) or not performances:raise HTTPException(400,'Inserisci almeno una esibizione')
+ if len(music_files)!=len(performances):raise HTTPException(400,'Carica un file MP3 per ogni esibizione')
  total=0
  for p in performances:
   if not isinstance(p,dict):raise HTTPException(400,'Dati esibizione non validi')
@@ -70,6 +76,25 @@ async def register(request:Request,kind:str=Form(...),school:str=Form(''),contac
    years=EVENT_DATE.year-born.year-((EVENT_DATE.month,EVENT_DATE.day)<(born.month,born.day))
    if not low<=years<=high:raise HTTPException(400,'La data di nascita non corrisponde alla categoria selezionata')
   total+=60 if section=='Assolo' else 80
+ music_names=[]
+ for idx,music in enumerate(music_files):
+  if not music.filename or Path(music.filename).suffix.lower()!='.mp3':
+   raise HTTPException(400,'Sono ammessi esclusivamente file MP3')
+  audio_data=await music.read()
+  if not audio_data or len(audio_data)>MAX_MUSIC:
+   raise HTTPException(400,'Il file MP3 è vuoto o supera 20 MB')
+  temp_path=MUSIC_DIR/f'{secrets.token_hex(16)}.mp3'
+  temp_path.write_bytes(audio_data)
+  try:
+   duration=MP3(temp_path).info.length
+  except Exception:
+   temp_path.unlink(missing_ok=True)
+   raise HTTPException(400,'Uno dei file caricati non è un MP3 valido')
+  if duration>MAX_MUSIC_SECONDS:
+   temp_path.unlink(missing_ok=True)
+   raise HTTPException(400,'La musica non può superare 2 minuti e 30 secondi')
+  music_names.append(temp_path.name)
+  performances[idx]['music_file']=temp_path.name
  receipt_name=''
  if receipt and receipt.filename:
   ext=Path(receipt.filename).suffix.lower()
@@ -90,6 +115,7 @@ Atleti (riepilogo): {athlete_names}
 Esibizioni: {json.dumps(performances,ensure_ascii=False)}
 Totale quote: {total} EUR
 Pagamento: {payment_method}
+Musiche MP3 salvate: {len(music_names)}
 Ricevuta caricata: {'Sì' if receipt_name else 'No'}
 Note: {notes}'''
  sent=notify(f'Nuova iscrizione VCOMPETITION #{rid}',body)

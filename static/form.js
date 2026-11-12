@@ -21,7 +21,7 @@ function applyRules(card){
 }
 function add(){
  count++;const card=document.createElement('div');card.className='performance';
- card.innerHTML=`<div class="performance-head"><b>Esibizione ${count}</b><button type="button" class="secondary remove">Rimuovi</button></div><label>Sezione<select class="section"><option>Assolo</option><option>Duo</option></select></label><label>Specialità<select class="specialty">${options(specialties)}</select></label><label>Categoria<select class="age">${options(ages)}</select></label><label>Livello<select class="level">${options(levels)}</select></label><label>Titolo coreografia<input class="title" required></label><div class="athlete-rows"></div>`;
+ card.innerHTML=`<div class="performance-head"><b>Esibizione ${count}</b><button type="button" class="secondary remove">Rimuovi</button></div><label>Sezione<select class="section"><option>Assolo</option><option>Duo</option></select></label><label>Specialità<select class="specialty">${options(specialties)}</select></label><label>Categoria<select class="age">${options(ages)}</select></label><label>Livello<select class="level">${options(levels)}</select></label><label>Titolo coreografia<input class="title" required></label><label>Musica (MP3, massimo 2:30)<input class="music" type="file" name="music_files" accept=".mp3,audio/mpeg" required></label><div class="athlete-rows"></div>`;
  host.append(card);renderAthletes(card);
  card.querySelector('.remove').onclick=()=>{card.remove();update()};
  card.querySelector('.specialty').onchange=()=>{applyRules(card);update()};
