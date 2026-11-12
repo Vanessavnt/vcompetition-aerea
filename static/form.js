@@ -16,12 +16,12 @@ function renderAthletes(card){
 }
 function applyRules(card){
  const section=card.querySelector('.section'),specialty=card.querySelector('.specialty');
- const duo=section.querySelector('option[value="Duo"]'),soloOnly=['Bungee Dance','Pole Dance'].includes(specialty.value);
+ const duo=section.querySelector('option[value="Duo"]'),soloOnly=specialty.value==='Bungee Dance';
  duo.disabled=soloOnly;if(soloOnly)section.value='Assolo';renderAthletes(card);
 }
 function add(){
  count++;const card=document.createElement('div');card.className='performance';
- card.innerHTML=`<div class="performance-head"><b>Esibizione ${count}</b><button type="button" class="secondary remove">Rimuovi</button></div><label>Sezione<select class="section"><option>Assolo</option><option>Duo</option></select></label><label>Specialità<select class="specialty">${options(specialties)}</select></label><label>Categoria<select class="age">${options(ages)}</select></label><label>Livello<select class="level">${options(levels)}</select></label><label>Titolo coreografia<input class="title" required></label><label>Musica (MP3, massimo 2:30)<input class="music" type="file" name="music_files" accept=".mp3,audio/mpeg" required></label><div class="athlete-rows"></div>`;
+ card.innerHTML=`<div class="performance-head"><b>Esibizione ${count}</b><button type="button" class="secondary remove">Rimuovi</button></div><label>Sezione<select class="section"><option>Assolo</option><option>Duo</option></select></label><label>Specialità<select class="specialty">${options(specialties)}</select></label><label>Categoria<select class="age">${options(ages)}</select></label><label>Livello<select class="level">${options(levels)}</select></label><label>Titolo coreografia<input class="title" required></label><label>Carica la tua musica in formato MP3<input class="music" type="file" name="music_files" accept=".mp3,audio/mpeg" required></label><p class="hint music-note">Durata regolamentare: 2 minuti e 30 secondi.<br><strong>10 secondi di tolleranza.</strong><br><strong>Durata massima consentita: 2 minuti e 40 secondi.</strong></p><div class="athlete-rows"></div>`;
  host.append(card);renderAthletes(card);
  card.querySelector('.remove').onclick=()=>{card.remove();update()};
  card.querySelector('.specialty').onchange=()=>{applyRules(card);update()};

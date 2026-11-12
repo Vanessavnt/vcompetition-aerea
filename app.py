@@ -17,7 +17,7 @@ MAX_UPLOAD=8*1024*1024
 MUSIC_DIR=UPLOADS/'music'
 MUSIC_DIR.mkdir(parents=True,exist_ok=True)
 MAX_MUSIC=20*1024*1024
-MAX_MUSIC_SECONDS=150
+MAX_MUSIC_SECONDS=160
 app=FastAPI(title='VCOMPETITION AEREA 2027')
 templates=Jinja2Templates(directory=str(BASE/'templates'))
 app.mount('/static',StaticFiles(directory=str(BASE/'static')),name='static')
@@ -63,7 +63,7 @@ async def register(request:Request,kind:str=Form(...),school:str=Form(''),contac
   if not isinstance(p,dict):raise HTTPException(400,'Dati esibizione non validi')
   section=p.get('section');specialty=p.get('specialty')
   if section not in ('Assolo','Duo') or specialty not in SPECIALTIES:raise HTTPException(400,'Sezione o specialità non valida')
-  if specialty in ('Bungee Dance','Pole Dance') and section!='Assolo':raise HTTPException(400,'Questa specialità è ammessa solo in Assolo')
+  if specialty=='Bungee Dance' and section!='Assolo':raise HTTPException(400,'Questa specialità è ammessa solo in Assolo')
   if p.get('category') not in AGES or p.get('level') not in LEVELS:raise HTTPException(400,'Categoria o livello non valido')
   athletes=p.get('athletes');expected=1 if section=='Assolo' else 2
   if not isinstance(athletes,list) or len(athletes)!=expected:raise HTTPException(400,'Inserisci i dati di ogni atleta')
@@ -92,7 +92,7 @@ async def register(request:Request,kind:str=Form(...),school:str=Form(''),contac
    raise HTTPException(400,'Uno dei file caricati non è un MP3 valido')
   if duration>MAX_MUSIC_SECONDS:
    temp_path.unlink(missing_ok=True)
-   raise HTTPException(400,'La musica non può superare 2 minuti e 30 secondi')
+   raise HTTPException(400,'La musica non può superare 2 minuti e 40 secondi (2:30 + 10 secondi di tolleranza)')
   music_names.append(temp_path.name)
   performances[idx]['music_file']=temp_path.name
  receipt_name=''
